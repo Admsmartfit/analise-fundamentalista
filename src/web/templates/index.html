@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradingAgents B3 - Cockpit Web v{{ version }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-body">
+    <!-- Topbar de Navegação e Status do Watchdog -->
+    <header class="cockpit-header">
+        <div class="header-left">
+            <div class="logo">
+                <span class="logo-symbol">⚡</span>
+                <span class="logo-title">TradingAgents</span>
+                <span class="badge-b3">B3</span>
+                <span class="version-tag">v{{ version }}</span>
+            </div>
+        </div>
+
+        <!-- Watchdog Banner no Topo (Visível quando há alertas) -->
+        <div id="watchdog-banner" class="watchdog-banner hidden">
+            <span class="icon">🔔</span>
+            <span id="watchdog-banner-msg">Aviso de Watchdog</span>
+        </div>
+
+        <div class="header-right">
+            <div class="server-status">
+                <span class="status-indicator active"></span>
+                <span>Motor Online 24/7</span>
+            </div>
+            <div class="user-session">
+                <span id="nav-user">admin</span>
+                <button class="btn btn-sm btn-outline" onclick="logout()">Sair</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Estrutura Principal -->
+    <div class="cockpit-container">
+        <!-- Sidebar de Navegação -->
+        <aside class="cockpit-sidebar">
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span>Visão Geral & Fila</span>
+                </button>
+                <button class="nav-item" data-tab="assets">
+                    <span class="nav-icon">📈</span>
+                    <span>Gerenciador B3</span>
+                </button>
+                <button class="nav-item" data-tab="sources">
+                    <span class="nav-icon">📡</span>
+                    <span>Fontes de Dados</span>
+                </button>
+                <button class="nav-item" data-tab="keypool">
+                    <span class="nav-icon">🔑</span>
+                    <span>Key Pool & Orçamento</span>
+                </button>
+                <button class="nav-item" data-tab="smartqueue">
+                    <span class="nav-icon">🔄</span>
+                    <span>Smart Queue & Webhooks</span>
+                </button>
+                <button class="nav-item" data-tab="memory">
+                    <span class="nav-icon">🧠</span>
+                    <span>Memória Pós-Morte</span>
+                </button>
+                <button class="nav-item" data-tab="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Watchdog & Ajustes</span>
+                </button>
+                <button class="nav-item" data-tab="logs">
+                    <span class="nav-icon">📜</span>
+                    <span>Logs de Auditoria</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="upstream-status-card">
+                    <small>Núcleo Upstream</small>
+                    <div class="upstream-badge">TauricResearch (Isolado)</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Conteúdo Principal Dinâmico -->
+        <main class="cockpit-main">
+
+            <!-- TAB 1: VISÃO GERAL & FILA AO VIVO -->
+            <section id="tab-dashboard" class="tab-content active">
+                <div class="section-header">
+                    <h2>Visão Geral do Cérebro Estratégico</h2>
+                    <p>Monitoramento em tempo real do processamento autônomo dos papéis da B3.</p>
+                </div>
+
+                <!-- Cards de Métricas Rápidas -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <span class="metric-label">Na Fila de Espera</span>
+                        <div class="metric-value" id="stat-queued">0</div>
+                        <span class="metric-sub">Aguardando lote</span>
+                    </div>
+                    <div class="metric-card highlight">
+                        <span class="metric-label">Em Processamento (IA)</span>
+                        <div class="metric-value" id="stat-processing">0</div>
+                        <span class="metric-sub">Lote ativo (max 2)</span>
+                    </div>
+                    <div class="metric-card success">
+                        <span class="metric-label">Concluídos Hoje</span>
+                        <div class="metric-value" id="stat-completed">0</div>
+                        <span class="metric-sub">Decisões despachadas</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Chaves Ativas no Pool</span>
+                        <div class="metric-value" id="stat-keys">0</div>
+                        <span class="metric-sub">Hot-swap disponível</span>
+                    </div>
+                </div>
+
+                <!-- Barra de Progresso em Tempo Real (Inspirada no crypto-cockpit) -->
+                <div class="card live-progress-card">
+                    <div class="card-header">
+                        <h3>⚡ Processamento da Fila ao Vivo</h3>
+                        <span class="badge" id="live-queue-badge">Fila Limpa</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="live-progress-bar" style="width: 0%;"></div>
+                        </div>
+                        <div class="progress-status-row">
+                            <span id="current-processing-info">Aguardando novas demandas do Robô Técnico...</span>
+                            <span id="progress-percentage">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumo de Decisões Recentes da B3 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Últimas Autorizações & Vereditos</h3>
+                        <button class="btn btn-sm btn-outline" onclick="loadAssets()">Atualizar</button>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Ticker</th>
+                                    <th>Status</th>
+                                    <th>Convicção</th>
+                                    <th>Validade</th>
+                                    <th>Tese Executiva</th>
+                                    <th>Fonte</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="quick-assets-tbody">
+                                <tr><td colspan="7" class="text-center">Carregando ativos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: GERENCIADOR B3 -->
+            <section id="tab-assets" class="tab-content">
+                <div class="section-header">
+                    <div class="section-title-wrap">
+                        <h2>Gerenciador de Ativos B3</h2>
+                        <p>Controle do universo de cobertura fundamentalista e status de autorização.</p>
+                    </div>
+                    <div class="section-actions">
+                        <button class="btn btn-primary" onclick="showAddAssetModal()">+ Cadastrar Papel</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Ativo</th>
+                                    <th>Nome / Setor</th>
+                                    <th>Status</th>
+                                    <th>Convicção</th>
+                                    <th>Validade Restante</th>
+                                    <th>Tese PT-BR</th>
+                                    <th>Ação Imediata</th>
+                                </tr>
+                            </thead>
+                            <tbody id="assets-tbody">
+                                <tr><td colspan="7" class="text-center">Carregando ativos cadastrados...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: FONTES DE DADOS -->
+            <section id="tab-sources" class="tab-content">
+                <div class="section-header">
+                    <div class="section-title-wrap">
+                        <h2>Fontes de Dados</h2>
+                        <p>De onde vêm os dados que a IA analisa. Teste cada fonte, ligue/desligue e cadastre feeds RSS.</p>
+                    </div>
+                    <div class="section-actions">
+                        <button class="btn btn-primary" onclick="showAddSourceModal()">+ Fonte RSS</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Testar fontes com um ativo</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="source-test-form" class="source-test-row">
+                            <input type="text" id="source-test-ticker" value="PETR4" placeholder="Ticker (ex: PETR4)" required>
+                            <button type="submit" class="btn btn-primary" id="source-test-all-btn">Testar todas</button>
+                            <span class="text-muted">Consulta todas as fontes (inclusive desligadas) e mostra o que a IA receberia.</span>
+                        </form>
+                        <div id="source-test-result" class="source-test-result hidden"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Fontes cadastradas</h3>
+                        <button class="btn btn-sm btn-outline" onclick="loadSources()">Atualizar</button>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Ligada</th>
+                                    <th>Fonte</th>
+                                    <th>Tipo</th>
+                                    <th>Status</th>
+                                    <th>Latência</th>
+                                    <th>Último resultado</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sources-tbody">
+                                <tr><td colspan="7" class="text-center">Carregando fontes...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Token brapi.dev (opcional)</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="brapi-token-form" class="source-test-row">
+                            <input type="password" id="brapi-token" placeholder="Cole o token gratuito de brapi.dev" autocomplete="off">
+                            <button type="submit" class="btn btn-outline">Salvar token</button>
+                            <span class="text-muted" id="brapi-token-status">Sem token o brapi só responde alguns papéis (ex: PETR4, VALE3, ITUB4).</span>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: KEY POOL & ORÇAMENTO -->
+            <section id="tab-keypool" class="tab-content">
+                <div class="section-header">
+                    <div class="section-title-wrap">
+                        <h2>Key Pool & Cascata de Modelos</h2>
+                        <p>Gestão de chaves de API com Hot-Swap automático e observabilidade de consumo.</p>
+                    </div>
+                    <div class="section-actions">
+                        <button class="btn btn-primary" onclick="showAddKeyModal()">+ Adicionar Chave</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Chaves Cadastradas no Pool</h3>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Provedor</th>
+                                    <th>Rótulo</th>
+                                    <th>Chave (Mascara)</th>
+                                    <th>Status / Rate Limit</th>
+                                    <th>Consumo / Cota Diária</th>
+                                    <th>Prioridade</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="keys-tbody">
+                                <tr><td colspan="8" class="text-center">Nenhuma chave cadastrada ainda.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: SMART QUEUE & WEBHOOKS -->
+            <section id="tab-smartqueue" class="tab-content">
+                <div class="section-header">
+                    <h2>Smart Queue & Webhooks Bidirecionais</h2>
+                    <p>Fila assíncrona, callbacks com tipagem rígida e histórico de envios com retentativa.</p>
+                </div>
+
+                <div class="grid-2-col">
+                    <!-- Painel de Envio de Teste -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Simular Demanda do Robô Técnico</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="demand-form">
+                                <div class="form-group">
+                                    <label>Tickers para Análise (separados por vírgula):</label>
+                                    <input type="text" id="demand-tickers" placeholder="PETR4, VALE3, ITUB4, WEGE3" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Prioridade:</label>
+                                    <select id="demand-priority">
+                                        <option value="normal">Normal</option>
+                                        <option value="alta">Alta</option>
+                                        <option value="urgente">Urgente</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Enfileirar Demanda</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Status das Retentativas -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Controle de Callbacks (Outbox)</h3>
+                            <button class="btn btn-sm btn-outline" onclick="forceRetryWebhooks()">Forçar Retentativas</button>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Se o endpoint do robô técnico estiver instável, os webhooks são retidos em fila local e reenviados com backoff exponencial.</p>
+                            <div id="outbox-stats" class="metric-row">
+                                <span class="badge" id="outbox-pending-badge">0 Pendentes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Histórico de Webhooks Despachados (TypeSafe)</h3>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Endpoint Destino</th>
+                                    <th>Status</th>
+                                    <th>Tentativas</th>
+                                    <th>Payload Rígido</th>
+                                    <th>Último Erro</th>
+                                </tr>
+                            </thead>
+                            <tbody id="webhooks-tbody">
+                                <tr><td colspan="6" class="text-center">Carregando histórico outbox...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: MEMÓRIA CONTÍNUA (SETTLE-AND-REFLECT) -->
+            <section id="tab-memory" class="tab-content">
+                <div class="section-header">
+                    <h2>Memória de Aprendizado Contínuo (Settle-and-Reflect)</h2>
+                    <p>Post-Mortem de trades encerrados: como o sistema aprende com erros e acertos reais.</p>
+                </div>
+
+                <!-- Formulário para simular feedback de trade -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Registrar Fechamento de Trade (Feedback do Robô Técnico)</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="feedback-form" class="form-row">
+                            <div class="form-group col-3">
+                                <label>Ticker:</label>
+                                <input type="text" id="fb-ticker" placeholder="VALE3" required>
+                            </div>
+                            <div class="form-group col-3">
+                                <label>Resultado:</label>
+                                <select id="fb-resultado">
+                                    <option value="LOSS">LOSS (Prejuízo)</option>
+                                    <option value="WIN">WIN (Lucro)</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-4">
+                                <label>Motivo Gráfico:</label>
+                                <input type="text" id="fb-motivo" placeholder="Rompimento falso / Stop acionado" required>
+                            </div>
+                            <div class="form-group col-2 btn-align">
+                                <button type="submit" class="btn btn-primary">Processar Pós-Morte</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tabela de Lições Aprendidas Gravadas -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Lições Aprendidas Gravadas na Memória</h3>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Ativo</th>
+                                    <th>Resultado</th>
+                                    <th>Motivo Gráfico</th>
+                                    <th>Lição Aprendida (Injetada nos Prompts)</th>
+                                    <th>Data Registro</th>
+                                </tr>
+                            </thead>
+                            <tbody id="memory-tbody">
+                                <tr><td colspan="5" class="text-center">Carregando memórias pós-morte...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 6: WATCHDOG & CONFIGURAÇÕES -->
+            <section id="tab-settings" class="tab-content">
+                <div class="section-header">
+                    <h2>Watchdog Duplo & Integrações</h2>
+                    <p>Monitoramento contínuo de atualizações seguras e parametrização sistêmica.</p>
+                </div>
+
+                <!-- Atualização do Sistema -->
+                <div class="card" id="update-card">
+                    <div class="card-header">
+                        <h3>⬆ Atualização do Sistema</h3>
+                        <span class="badge badge-neutral" id="update-version-badge">v{{ version }}</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="update-banner" class="update-banner hidden"></div>
+
+                        <div class="update-row">
+                            <div class="update-info">
+                                <div><span class="text-muted">Versão instalada:</span> <strong id="update-installed">{{ version }}</strong></div>
+                                <div><span class="text-muted">Versão disponível:</span> <strong id="update-available">—</strong></div>
+                                <div class="text-muted" id="update-notes"></div>
+                            </div>
+                            <div class="update-actions">
+                                <button class="btn btn-outline" id="update-check-btn" onclick="checkUpdate()">Verificar</button>
+                                <button class="btn btn-primary" id="update-apply-btn" onclick="applyUpdate()" disabled>Atualizar</button>
+                            </div>
+                        </div>
+
+                        <details class="update-advanced">
+                            <summary>Canal de atualização e envio manual</summary>
+                            <form id="update-channel-form" class="source-test-row" style="margin-top: 12px;">
+                                <input type="text" id="update-channel" placeholder="Pasta (ex: G:\Meu Drive\TradingAgents-updates) ou URL do latest.json" style="flex: 1; min-width: 260px;">
+                                <button type="submit" class="btn btn-outline">Salvar canal</button>
+                            </form>
+                            <p class="text-muted" style="margin-top: 8px; line-height: 1.6;">
+                                O canal é onde o <code>build/build.py --publish</code> coloca o <code>latest.json</code> e o pacote:
+                                uma pasta compartilhada/sincronizada (Google Drive, OneDrive, rede) ou um endereço web.
+                            </p>
+                            <form id="update-upload-form" class="source-test-row" style="margin-top: 12px;">
+                                <input type="file" id="update-file" accept=".zip">
+                                <button type="submit" class="btn btn-outline">Atualizar com arquivo .zip</button>
+                            </form>
+                        </details>
+                    </div>
+                </div>
+
+                <div class="grid-2-col">
+                    <!-- Watchdog 1: Upstream Oficial -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Watchdog das Fontes Originais</h3>
+                            <span class="badge" id="watchdog-up-badge">Monitorando</span>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Repositório Base:</strong> TauricResearch/TradingAgents</p>
+                            <p><strong>Diretriz:</strong> Atualização estritamente manual. Emite alerta visual no Cockpit e no WhatsApp sem interferir no pregão.</p>
+                            <p><strong>Último Commit Local:</strong> <code id="watchdog-up-local">...</code></p>
+                            <p><strong>Último Commit Remoto:</strong> <code id="watchdog-up-remote">...</code></p>
+                            <button class="btn btn-outline btn-sm" onclick="checkWatchdogs()">Verificar Agora</button>
+                        </div>
+                    </div>
+
+                    <!-- Watchdog 2: Sistema Customizado -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Watchdog do Sistema Customizado B3</h3>
+                            <span class="badge" id="watchdog-cust-badge">Auto-Update Seguro</span>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Janela de Instalação:</strong> 03:00 AM (fora do pregão)</p>
+                            <p><strong>Diretriz:</strong> Ao aprovar um commit na customização B3, o sistema exibe aviso no Cockpit e agenda atualização automática para as 03:00.</p>
+                            <p><strong>Status Agendamento:</strong> <span id="watchdog-cust-sched">Nenhum update pendente</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configurações Evolution API e Robô Técnico -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Parâmetros de Integração</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="settings-form">
+                            <div class="form-group">
+                                <label>URL de Callback do Robô Técnico (Webhook):</label>
+                                <input type="text" id="set-robot-url" placeholder="http://localhost:5000/webhook/decisao">
+                            </div>
+                            <div class="grid-2-col">
+                                <div class="form-group">
+                                    <label>URL Evolution API (WhatsApp):</label>
+                                    <input type="text" id="set-evolution-url" placeholder="https://api.evolution.exemplo.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>Chave API Evolution:</label>
+                                    <input type="password" id="set-evolution-key" placeholder="••••••••">
+                                </div>
+                            </div>
+                            <div class="grid-2-col">
+                                <div class="form-group">
+                                    <label>Instância Evolution:</label>
+                                    <input type="text" id="set-evolution-instance" placeholder="tradingagents">
+                                </div>
+                                <div class="form-group">
+                                    <label>Número WhatsApp Destino (Alertas Restritos):</label>
+                                    <input type="text" id="set-evolution-number" placeholder="5511999999999">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Salvar Configurações</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 7: LOGS DE AUDITORIA -->
+            <section id="tab-logs" class="tab-content">
+                <div class="section-header">
+                    <h2>Logs de Auditoria & Segurança</h2>
+                    <p>Registro cronológico de eventos sistêmicos, hot-swaps e autorizações.</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="terminal-view" id="logs-container">
+                            <div class="log-line">Carregando logs do sistema...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modais -->
+    <!-- Modal Adicionar Ativo -->
+    <div id="modal-asset" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Cadastrar Papel na B3</h3>
+                <button class="modal-close" onclick="closeModals()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-asset-form">
+                    <div class="form-group">
+                        <label>Ticker (Ex: PETR4 ou PETR4.SA):</label>
+                        <input type="text" id="new-asset-ticker" placeholder="PETR4" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nome da Empresa (opcional):</label>
+                        <input type="text" id="new-asset-name" placeholder="Petrobras">
+                    </div>
+                    <div class="form-group">
+                        <label>Setor:</label>
+                        <input type="text" id="new-asset-sector" placeholder="Petróleo e Gás">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Salvar Ativo</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Adicionar Chave API -->
+    <div id="modal-key" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Adicionar Chave ao Key Pool</h3>
+                <button class="modal-close" onclick="closeModals()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-key-form">
+                    <div class="form-group">
+                        <label>Provedor de LLM:</label>
+                        <select id="new-key-provider" required>
+                            <option value="gemini">Google Gemini</option>
+                            <option value="claude">Anthropic Claude</option>
+                            <option value="deepseek">DeepSeek</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="groq">Groq</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Rótulo / Identificador:</label>
+                        <input type="text" id="new-key-label" placeholder="Chave Gratuita 1">
+                    </div>
+                    <div class="form-group">
+                        <label>Chave de API (Secret):</label>
+                        <input type="password" id="new-key-value" placeholder="AIzaSy... / sk-..." required>
+                    </div>
+                    <div class="grid-2-col">
+                        <div class="form-group">
+                            <label>Cota Diária Estimada:</label>
+                            <input type="number" id="new-key-limit" value="1000">
+                        </div>
+                        <div class="form-group">
+                            <label>Prioridade (1 = mais alta):</label>
+                            <input type="number" id="new-key-priority" value="1">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Adicionar ao Pool</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Adicionar Fonte RSS -->
+    <div id="modal-source" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Cadastrar Fonte RSS</h3>
+                <button class="modal-close" onclick="closeModals()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-source-form">
+                    <div class="form-group">
+                        <label>Nome da fonte:</label>
+                        <input type="text" id="new-source-name" placeholder="Ex: Valor Econômico" required minlength="2">
+                    </div>
+                    <div class="form-group">
+                        <label>URL do feed RSS:</label>
+                        <input type="url" id="new-source-url" placeholder="https://site.com/feed/" required>
+                    </div>
+                    <p class="text-muted source-help">
+                        Feed geral (ex: <code>https://site.com/feed/</code>): o sistema filtra as manchetes que citam o ativo.<br>
+                        Feed de busca: use <code>{ticker}</code> ou <code>{empresa}</code> na URL, ex:
+                        <code>https://site.com/rss?q={ticker}</code>.
+                    </p>
+                    <button type="submit" class="btn btn-primary btn-block">Cadastrar e testar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Fontes de um Ativo -->
+    <div id="modal-asset-sources" class="modal-backdrop hidden">
+        <div class="modal-card modal-wide">
+            <div class="modal-header">
+                <h3 id="asset-sources-title">Fontes do ativo</h3>
+                <button class="modal-close" onclick="closeModals()">&times;</button>
+            </div>
+            <div class="modal-body modal-scroll" id="asset-sources-body">
+                Carregando...
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

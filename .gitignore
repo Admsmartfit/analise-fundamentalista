@@ -1,0 +1,17 @@
+# Dados e segredos: NUNCA versionar (o banco guarda as chaves de API)
+*.db
+*.db-journal
+.env
+data/
+
+# Build
+build/cache/
+build/work/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# A pasta updates/ (pacote + latest.json) É versionada: é o canal de atualização pelo GitHub

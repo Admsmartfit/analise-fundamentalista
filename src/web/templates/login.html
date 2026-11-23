@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradingAgents B3 - Cockpit Login</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body class="login-body">
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo-badge">
+                    <span class="logo-icon">⚡</span>
+                    <span class="logo-b3">B3</span>
+                </div>
+                <h2>TradingAgents Cockpit</h2>
+                <p>Cérebro Estratégico Autorizador</p>
+            </div>
+
+            <div id="login-error" class="alert-box error hidden"></div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Usuário Administrador</label>
+                    <input type="text" id="username" name="username" placeholder="admin" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha de Acesso</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" id="btn-submit" class="btn btn-primary btn-block">
+                    <span>Acessar Cockpit</span>
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <small>Operação Contínua 24/7 &bull; v8.0 Consolidada</small>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const errorDiv = document.getElementById('login-error');
+            const btn = document.getElementById('btn-submit');
+            errorDiv.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerText = "Autenticando...";
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const resp = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (resp.ok) {
+                    const data = await resp.json();
+                    localStorage.setItem('tradingagents_token', data.access_token);
+                    window.location.href = '/';
+                } else {
+                    const err = await resp.json();
+                    errorDiv.innerText = err.detail || 'Usuário ou senha incorretos.';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorDiv.innerText = 'Falha de conexão com o servidor.';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Acessar Cockpit";
+            }
+        });
+    </script>
+</body>
+</html>

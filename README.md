@@ -155,12 +155,20 @@ TradingAgentsB3\
 Cria atalho na Área de Trabalho/Menu Iniciar, início automático (opcional) e entrada em
 *Aplicativos instalados* para desinstalar. Rodar um instalador novo por cima mantém os dados.
 
-### Atualizar com um clique
-1. Aqui: aumente o número em `VERSION` e rode
-   `python build/build.py --skip-installer --publish "G:\Meu Drive\TA-updates" --notes "..."`
-   (qualquer pasta compartilhada/sincronizada — Google Drive, OneDrive, rede — ou um site com o `latest.json`).
-2. Lá: Cockpit → **Watchdog & Ajustes → Atualização do Sistema** → informe o canal uma vez →
-   **Verificar** → **Atualizar**. Sem canal, use **Atualizar com arquivo .zip** (envie o `TradingAgentsB3-app-X.Y.Z.zip`).
+### Atualizar com um clique (canal: GitHub)
+Canal configurado no Cockpit (**Watchdog & Ajustes → Atualização do Sistema → Canal**):
+```
+https://raw.githubusercontent.com/Admsmartfit/analise-fundamentalista/main/updates/latest.json
+```
+Para lançar uma versão nova:
+1. Aumente o número em `VERSION` (ex.: `8.1.0` → `8.1.1`).
+2. `python build/build.py --skip-installer --publish updates --notes "O que mudou"`
+3. `git add -A && git commit -m "Versão 8.1.1" && git push`
+4. No computador instalado: **Verificar** → **Atualizar** (o GitHub pode levar até 5 min para mostrar o arquivo novo).
+
+O repositório é público: o `.gitignore` impede que banco (`*.db`, que guarda as chaves de API), `.env`,
+`dist/` e o cache do build sejam enviados. Nunca force a inclusão desses arquivos.
+Sem internet/GitHub, também funciona com uma pasta compartilhada como canal ou com **Atualizar com arquivo .zip**.
 
 O que acontece ao clicar: baixa o pacote e confere o SHA-256 → backup do banco em `data\backups\` →
 para o servidor → troca `app\` → instala dependências novas se `requirements.txt` mudou → reinicia.

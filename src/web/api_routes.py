@@ -402,6 +402,9 @@ def get_settings(db: Session = Depends(get_db), current_user: User = Depends(get
 
 @router.post("/settings")
 def update_setting(payload: SystemSettingUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if payload.key == "technical_robot_webhook_url":
+        from src.webhooks.dispatcher import normalize_url
+        payload.value = normalize_url(payload.value)
     setting = db.query(SystemSetting).filter(SystemSetting.key == payload.key).first()
     if not setting:
         setting = SystemSetting(key=payload.key, value=payload.value)

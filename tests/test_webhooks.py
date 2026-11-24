@@ -99,3 +99,35 @@ def test_forcar_retentativas_reenvia_falhas_com_url_atual(db_session):
         assert post.call_args[0][0] == "http://nova.local/cb"
     db_session.refresh(entry)
     assert entry.status == "delivered"
+
+
+def test_ping_e_reenvio_usam_endereco_novo(db_session):
+    from src.models import SystemSetting
+    from src.webhooks.dispatcher import normalize_url
+    assert normalize_url(" localhost:8765/webhook/decisao ") == "http://localhost:8765/webhook/decisao"
+    assert normalize_url("https://x.com/a") == "https://x.com/a"
+
+    dispatcher = WebhookDispatcher(target_url="http://env.local/cb")
+    setting = SystemSetting(key="technical_robot_webhook_url", value="http://errado.local/cb")
+    db_session.add(setting)
+    db_session.commit()
+    decision = TypeSafeDecisionFormatter.format_decision(
+        ticker="BBAS3", status="autorizado", conviccao=0.7, validade_dias=3, tese_resumida="ok")
+    with patch.object(httpx.Client, "post", side_effect=httpx.ConnectError("down")):
+        entry = dispatcher.queue_decision(db_session, decision)
+    assert entry.target_url == "http://errado.local/cb"
+
+    # Usuário corrige o endereço (sem http://)
+    setting.value = "localhost:8765/webhook/decisao"
+    db_session.commit()
+
+    class _Ok:
+        status_code = 200
+        text = "pong"
+    with patch.object(httpx.Client, "post", return_value=_Ok()) as post:
+        assert dispatcher.ping_target(db_session)["target_url"] == "http://localhost:8765/webhook/decisao"
+        assert dispatcher.ping_target(db_session, " localhost:9000/x")["target_url"] == "http://localhost:9000/x"
+        dispatcher.attempt_delivery(db_session, entry.id)          # reenvio automático pendente
+        assert post.call_args[0][0] == "http://localhost:8765/webhook/decisao"
+    db_session.refresh(entry)
+    assert entry.status == "delivered" and entry.target_url == "http://localhost:8765/webhook/decisao"

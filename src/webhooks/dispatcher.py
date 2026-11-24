@@ -9,6 +9,14 @@ from src.schemas import DecisionCallbackPayload
 
 logger = logging.getLogger("webhooks.dispatcher")
 
+
+def normalize_url(url: Optional[str]) -> str:
+    """Aceita 'localhost:8765/webhook' (sem http://) e remove espaços; o httpx exige o esquema."""
+    u = (url or "").strip()
+    if u and "://" not in u:
+        u = "http://" + u
+    return u
+
 class WebhookDispatcher:
     """
     Despachante de Webhooks com Fila de Retentativa Exponencial (Outbox Pattern).
@@ -22,8 +30,8 @@ class WebhookDispatcher:
         """URL configurada no Cockpit (Watchdog & Ajustes) tem precedência sobre o .env."""
         setting = db.query(SystemSetting).filter(SystemSetting.key == "technical_robot_webhook_url").first()
         if setting and setting.value and setting.value.strip():
-            return setting.value.strip()
-        return self.target_url
+            return normalize_url(setting.value)
+        return normalize_url(self.target_url)
 
     def queue_decision(self, db: Session, decision: DecisionCallbackPayload, target_url: Optional[str] = None) -> WebhookOutbox:
         """Adiciona decisão na fila outbox para envio imediato e retentativas"""
@@ -49,6 +57,14 @@ class WebhookDispatcher:
         entry = db.query(WebhookOutbox).filter(WebhookOutbox.id == outbox_id).first()
         if not entry or entry.status == "delivered":
             return True
+
+        # Reenvio segue o endereço ATUAL do Cockpit: se o usuário corrigiu a URL,
+        # as decisões pendentes não continuam indo para o endereço antigo/errado.
+        atual = self.resolve_target_url(db)
+        if entry.target_url != atual:
+            logger.info(f"[WebhookDispatcher] Webhook ID {entry.id}: endereço atualizado {entry.target_url} -> {atual}")
+            entry.target_url = atual
+            db.commit()
 
         try:
             with httpx.Client(timeout=WEBHOOK_TIMEOUT_SECONDS) as client:
@@ -136,7 +152,7 @@ class WebhookDispatcher:
         Não armazena na outbox (é um teste imediato síncrono para validação da conectividade).
         """
         import time
-        url = target_url or self.resolve_target_url(db)
+        url = normalize_url(target_url) if target_url and target_url.strip() else self.resolve_target_url(db)
         payload = {
             "tipo": "ping_teste",
             "origem": "TradingAgents B3",

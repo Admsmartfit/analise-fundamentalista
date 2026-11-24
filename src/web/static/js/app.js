@@ -74,7 +74,7 @@ function switchTab(tabId) {
     if (tabId === 'assets') loadAssets();
     if (tabId === 'sources') { loadSources(); loadBrapiTokenStatus(); }
     if (tabId === 'keypool') loadKeys();
-    if (tabId === 'smartqueue') loadWebhooks();
+    if (tabId === 'smartqueue') { loadWebhooks(); loadSavedRobotUrl(); }
     if (tabId === 'memory') loadMemories();
     if (tabId === 'settings') { loadSettings(); loadUpdateStatus(); }
     if (tabId === 'logs') loadLogs();
@@ -290,6 +290,42 @@ async function forceRetryWebhooks() {
     }
 }
 
+// Endereço salvo do robô (Watchdog & Ajustes): o campo do teste começa com ele
+let savedRobotUrl = '';
+
+async function loadSavedRobotUrl() {
+    try {
+        const res = await authFetch('/api/settings');
+        if (!res || !res.ok) return;
+        const s = await res.json();
+        savedRobotUrl = (s.technical_robot_webhook_url || '').trim();
+        const input = document.getElementById('webhook-test-url');
+        if (!input) return;
+        if (!input.dataset.editado) input.value = savedRobotUrl;
+        // Depois que o usuário digita, não sobrescreve o que ele está testando
+        input.oninput = () => { input.dataset.editado = input.value.trim() !== savedRobotUrl ? '1' : ''; };
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+async function saveRobotUrl(url) {
+    const res = await authFetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'technical_robot_webhook_url', value: url })
+    });
+    if (res && res.ok) {
+        savedRobotUrl = url;
+        const set = document.getElementById('set-robot-url');
+        if (set) set.value = url;
+        const btn = document.getElementById('btn-save-robot-url');
+        if (btn) {
+            btn.outerHTML = '<div style="margin-top: 8px; color: var(--success);">✔ Salvo como endereço do robô. As decisões (inclusive reenvios pendentes) vão para ele.</div>';
+        }
+    }
+}
+
 async function pingTechnicalRobot() {
     const btn = document.getElementById('btn-ping-robot');
     const statusBadge = document.getElementById('webhook-ping-status');
@@ -320,12 +356,19 @@ async function pingTechnicalRobot() {
             statusBadge.innerText = `Online (${data.latency_ms} ms)`;
             resultBox.style.background = 'rgba(16, 185, 129, 0.1)';
             resultBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+            const diferente = data.target_url !== savedRobotUrl;
             resultBox.innerHTML = `
                 <div style="color: var(--success); font-weight: bold; margin-bottom: 4px;">✔ Conexão estabelecida com sucesso!</div>
-                <div><strong>Destino:</strong> <code>${data.target_url}</code></div>
-                <div><strong>Status HTTP:</strong> ${data.status_code} | <strong>Latência:</strong> ${data.latency_ms} ms</div>
-                <div style="margin-top: 6px;"><strong>Resposta do Robô:</strong> <code>${data.resposta || '(Vazio / 204)'}</code></div>
+                <div><strong>Destino:</strong> <code>${esc(data.target_url)}</code></div>
+                <div><strong>Status HTTP:</strong> ${esc(data.status_code)} | <strong>Latência:</strong> ${esc(data.latency_ms)} ms</div>
+                <div style="margin-top: 6px;"><strong>Resposta do Robô:</strong> <code>${esc(data.resposta || '(Vazio / 204)')}</code></div>
+                ${data.latency_ms > 1000 && /\/\/localhost[:/]/i.test(data.target_url) ? `<div style="margin-top: 8px; color: var(--warning);">💡 Lento por causa do "localhost" (o Windows tenta IPv6 primeiro).
+                    Use <code>${esc(data.target_url.replace(/\/\/localhost/i, '//127.0.0.1'))}</code> para respostas ~15x mais rápidas.</div>` : ''}
+                ${diferente ? `<div style="margin-top: 10px;">⚠ Este endereço é diferente do salvo (<code>${esc(savedRobotUrl || 'nenhum')}</code>).
+                    <button type="button" class="btn btn-sm btn-primary" id="btn-save-robot-url" style="margin-left: 6px;">Salvar este endereço como o do robô</button></div>` : ''}
             `;
+            const saveBtn = document.getElementById('btn-save-robot-url');
+            if (saveBtn) saveBtn.addEventListener('click', () => saveRobotUrl(data.target_url));
         } else {
             statusBadge.className = 'badge badge-danger';
             statusBadge.innerText = 'Falha na conexão';
@@ -333,8 +376,8 @@ async function pingTechnicalRobot() {
             resultBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
             resultBox.innerHTML = `
                 <div style="color: var(--danger); font-weight: bold; margin-bottom: 4px;">✖ Não foi possível conectar ao Robô Técnico</div>
-                <div><strong>Destino tentado:</strong> <code>${data.target_url}</code></div>
-                <div><strong>Erro detalhado:</strong> ${data.erro || 'Erro desconhecido'}</div>
+                <div><strong>Destino tentado:</strong> <code>${esc(data.target_url)}</code></div>
+                <div><strong>Erro detalhado:</strong> ${esc(data.erro || 'Erro desconhecido')}</div>
                 <div style="margin-top: 6px; color: var(--text-muted);">Dica: Certifique-se de que o outro programa está rodando e ouvindo na porta indicada (ex: <code>python mock_technical_robot.py</code>).</div>
             `;
         }

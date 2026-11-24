@@ -1,8 +1,8 @@
 {
-  "version": "8.2.0",
-  "package": "TradingAgentsB3-app-8.2.0.zip",
-  "sha256": "3d9119e3ecee1d3416405739ec02a34521cfb8e0c779f521eac67021edc063df",
-  "size": 244111,
-  "notes": "Suporte a teste de comunicacao bidirecional, endpoint de ping, Mock do Robo Tecnico e scripts de diagnostico.",
-  "published_at": "2026-11-24T08:13:21"
+  "version": "8.2.1",
+  "package": "TradingAgentsB3-app-8.2.1.zip",
+  "sha256": "17bce80a81772eea92df7d0bd37bcbaaaa615064caefe8c38f3fece3cb68bab4",
+  "size": 245667,
+  "notes": "Teste de conexão: campo já vem com o endereço salvo, botão para salvar o endereço testado, aceita endereço sem http://, reenvios pendentes seguem o endereço novo e dica de 127.0.0.1.",
+  "published_at": "2026-11-24T09:53:58"
 }

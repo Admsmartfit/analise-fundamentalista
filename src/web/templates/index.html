@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TradingAgents B3 - Cockpit Web v{{ version }}</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css?v={{ version }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -355,9 +355,9 @@
                         <span class="badge badge-neutral" id="webhook-ping-status">Aguardando teste</span>
                     </div>
                     <div class="card-body">
-                        <p class="text-muted" style="margin-bottom: 12px;">Dispara um webhook de teste instantâneo para verificar se o robô técnico na mesma máquina está respondendo na porta configurada.</p>
+                        <p class="text-muted" style="margin-bottom: 12px;">Envia um webhook de teste para o endereço abaixo (já vem preenchido com o endereço salvo). Para testar outro, edite o campo; se funcionar, salve-o como endereço do robô.</p>
                         <form id="webhook-test-form" class="source-test-row" onsubmit="event.preventDefault(); pingTechnicalRobot();" style="display: flex; gap: 10px; align-items: center;">
-                            <input type="text" id="webhook-test-url" placeholder="http://localhost:5000/webhook/decisao" style="flex: 1;">
+                            <input type="text" id="webhook-test-url" placeholder="http://localhost:8765/webhook/decisao" style="flex: 1;">
                             <button type="submit" class="btn btn-primary" id="btn-ping-robot">Testar Conexão (Ping)</button>
                         </form>
                         <div id="webhook-ping-result" class="source-test-result hidden" style="margin-top: 14px; padding: 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 12px;"></div>
@@ -693,6 +693,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/app.js?v={{ version }}"></script>
 </body>
 </html>

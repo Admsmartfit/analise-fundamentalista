@@ -6,8 +6,8 @@ Executa na mesma máquina (por padrão na porta 5000) e simula o robô de análi
 Capacidades:
 1. Recebe os Webhooks de Decisão do TradingAgents em `POST /webhook/decisao` (Porta 5000)
 2. Responde aos pings de teste de conexão com `HTTP 200`
-3. Dispara demandas de ativos para o TradingAgents (`POST http://localhost:8000/api/queue/demand`)
-4. Dispara feedback de trades (WIN/LOSS) para o Settle-and-Reflect (`POST http://localhost:8000/api/memory/feedback`)
+3. Dispara demandas de ativos para o TradingAgents (`POST http://127.0.0.1:8001/api/queue/demand`)
+4. Dispara feedback de trades (WIN/LOSS) para o Settle-and-Reflect (`POST http://127.0.0.1:8001/api/memory/feedback`)
 """
 
 import sys
@@ -24,7 +24,7 @@ app = FastAPI(title="Robô Técnico (Mock de Teste)", version="1.0.0")
 
 # Histórico em memória de decisões recebidas do TradingAgents
 recebidos: List[Dict[str, Any]] = []
-TRADINGAGENTS_BASE_URL = "http://localhost:8000"
+TRADINGAGENTS_BASE_URL = "http://127.0.0.1:8001"
 
 @app.get("/")
 def home():
@@ -32,7 +32,7 @@ def home():
         "status": "online",
         "service": "Robô de Análise Técnica (Mock de Teste)",
         "porta": 5000,
-        "endpoint_webhook": "http://localhost:5000/webhook/decisao",
+        "endpoint_webhook": "http://127.0.0.1:5000/webhook/decisao",
         "total_webhooks_recebidos": len(recebidos)
     }
 
@@ -166,7 +166,7 @@ def main():
 
     print("=" * 65)
     print("🤖 Robô Técnico (Mock de Teste) - Ouvindo na Porta", args.port)
-    print(f"   Webhook de Destino: http://localhost:{args.port}/webhook/decisao")
+    print(f"   Webhook de Destino: http://127.0.0.1:{args.port}/webhook/decisao")
     print(f"   TradingAgents Alvo: {args.tradingagents_url}")
     print("=" * 65)
     print("Pronto para receber decisões e testes do TradingAgents!")

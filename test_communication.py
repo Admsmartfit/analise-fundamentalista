@@ -9,8 +9,8 @@ import time
 import json
 import httpx
 
-TRADINGAGENTS_URL = "http://localhost:8000"
-ROBOT_WEBHOOK_URL = "http://localhost:5000/webhook/decisao"
+TRADINGAGENTS_URL = "http://127.0.0.1:8001"
+ROBOT_WEBHOOK_URL = "http://127.0.0.1:5000/webhook/decisao"
 
 def run_tests():
     print("=" * 65)
@@ -18,14 +18,14 @@ def run_tests():
     print("=" * 65)
 
     # 1. Teste de Conexão com o TradingAgents
-    print("\n[1/5] Verificando se o TradingAgents está ativo em http://localhost:8000...")
+    print("\n[1/5] Verificando se o TradingAgents está ativo em http://127.0.0.1:8001...")
     ta_online = False
     try:
         with httpx.Client(timeout=3.0) as client:
             r = client.get(f"{TRADINGAGENTS_URL}/api/auth/me")
             # 401 significa que o servidor está online e respondendo (exige token)
             if r.status_code in (200, 401):
-                print("  ✔ TradingAgents está ONLINE e respondendo na porta 8000.")
+                print("  ✔ TradingAgents está ONLINE e respondendo na porta 8001.")
                 ta_online = True
             else:
                 print(f"  ✔ TradingAgents respondeu com HTTP {r.status_code}.")
@@ -130,7 +130,7 @@ def run_tests():
 
     print("\n" + "=" * 65)
     print("📋 RESUMO FINAL DO DIAGNÓSTICO:")
-    print(f"  - TradingAgents (Porta 8000): {'ONLINE ✔' if ta_online else 'OFFLINE ✖'}")
+    print(f"  - TradingAgents (Porta 8001): {'ONLINE ✔' if ta_online else 'OFFLINE ✖'}")
     print(f"  - Robô Técnico  (Porta 5000): {'ONLINE ✔' if robot_online else 'OFFLINE ✖'}")
     if ta_online and robot_online:
         print("  🎉 COMUNICAÇÃO BIDIRECIONAL COMPLETA E FUNCIONANDO!")

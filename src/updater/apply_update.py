@@ -153,7 +153,7 @@ class Updater:
                 self.status("dependencias", "Instalando dependências novas (precisa de internet)...")
                 r = subprocess.run([str(self.python), "-m", "pip", "install", "--no-warn-script-location",
                                     "--disable-pip-version-check", "-r", str(self.app_new / "requirements.txt")],
-                                   capture_output=True, text=True, creationflags=CREATE_NO_WINDOW)
+                                   capture_output=True, text=True, encoding="utf-8", errors="replace", creationflags=CREATE_NO_WINDOW)
                 self.log(r.stdout[-4000:])
                 if r.returncode != 0:
                     self.log(r.stderr[-4000:])

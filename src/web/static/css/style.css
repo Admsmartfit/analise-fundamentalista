@@ -754,3 +754,13 @@ input:focus, select:focus {
     border-radius: 50%; animation: spin 0.9s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== Porta e Endereço ===== */
+.network-select {
+    padding: 9px 12px; background: var(--bg-main); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text-main); font-size: 13px; max-width: 100%;
+}
+#network-card input[type=number] {
+    padding: 9px 12px; background: var(--bg-main); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text-main); font-size: 13px;
+}

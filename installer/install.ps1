@@ -81,7 +81,7 @@ try {
         Write-Host ""
         Write-Host "  Configuração inicial (Enter aceita o valor entre colchetes):" -ForegroundColor Yellow
         $senha = Ask 'Senha do usuário admin do Cockpit' 'admin123'
-        $porta = if ($Port) { $Port } else { Ask 'Porta do Cockpit (o sistema de análise técnica espera 8000)' '8000' }
+        $porta = if ($Port) { $Port } else { Ask 'Porta do Cérebro (o sistema de análise técnica deve chamar esta porta)' '8001' }
         $robo = Ask 'URL do Robô Técnico (webhook de decisões)' 'http://127.0.0.1:5000/webhook/decisao'
         $bytes = New-Object byte[] 32
         [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
@@ -94,7 +94,7 @@ try {
 SECRET_KEY=$secret
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=$senha
-HOST=0.0.0.0
+HOST=127.0.0.1
 PORT=$porta
 TECHNICAL_ROBOT_WEBHOOK_URL=$robo
 UPDATE_CHANNEL=$canal

@@ -36,11 +36,11 @@ def read_port() -> int:
                     return int(line.split("=", 1)[1].strip())
                 except ValueError:
                     pass
-    return 8000
+    return 8001
 
 
 PORT = read_port()
-URL = f"http://localhost:{PORT}"
+URL = f"http://127.0.0.1:{PORT}"
 
 
 def health():
@@ -98,14 +98,63 @@ def alert(msg: str):
         print(msg)
 
 
+def process_alive(pid: int) -> bool:
+    """Pergunta direto ao Windows (sem ler texto do tasklist: no Windows em português a saída vem em
+    cp850 com acentos e quebrava a leitura como UTF-8, derrubando o reinício)."""
+    import ctypes
+    kernel32 = ctypes.windll.kernel32
+    handle = kernel32.OpenProcess(0x1000, False, int(pid))  # PROCESS_QUERY_LIMITED_INFORMATION
+    if not handle:
+        return False
+    try:
+        code = ctypes.c_ulong()
+        kernel32.GetExitCodeProcess(handle, ctypes.byref(code))
+        return code.value == 259  # STILL_ACTIVE
+    finally:
+        kernel32.CloseHandle(handle)
+
+
+def log(msg: str):
+    try:
+        logs = DATA_DIR / "logs"
+        logs.mkdir(parents=True, exist_ok=True)
+        with open(logs / "launcher.log", "a", encoding="utf-8") as f:
+            f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
+    except Exception:
+        pass
+
+
+def restart(pid: int):
+    """Usado pelo Cockpit ao trocar porta/endereço: encerra o servidor atual e sobe lendo o .env de novo."""
+    log(f"restart: encerrando PID {pid}; nova porta {PORT}")
+    time.sleep(1.5)  # deixa o servidor responder ao clique
+    r = subprocess.run(["taskkill", "/PID", str(pid), "/F"], capture_output=True,
+                       creationflags=CREATE_NO_WINDOW)  # sem text=True: saída em cp850 no Windows PT-BR
+    log(f"restart: taskkill -> código {r.returncode}")
+    for _ in range(40):
+        if not process_alive(pid):
+            break
+        time.sleep(0.5)
+    ok = start_server()
+    log(f"restart: servidor na porta {PORT} -> {'OK' if ok else 'FALHOU'}")
+    if not ok:
+        sys.exit(1)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--background", action="store_true")
     ap.add_argument("--stop", action="store_true")
+    ap.add_argument("--restart", action="store_true")
+    ap.add_argument("--pid", type=int, default=0)
     a = ap.parse_args()
 
     if a.stop:
         stop_server()
+        return
+
+    if a.restart:
+        restart(a.pid)
         return
 
     if not health() and not start_server():

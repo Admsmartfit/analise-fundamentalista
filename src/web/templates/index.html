@@ -456,6 +456,33 @@
                     <p>Monitoramento contínuo de atualizações seguras e parametrização sistêmica.</p>
                 </div>
 
+                <!-- Porta e endereço do Cérebro -->
+                <div class="card" id="network-card">
+                    <div class="card-header">
+                        <h3>🔌 Porta e Endereço do Cérebro</h3>
+                        <span class="badge badge-neutral" id="network-badge">—</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted" style="margin-bottom: 12px; line-height: 1.6;">
+                            É nesta porta que o Cockpit abre e que o sistema de análise técnica deve chamar
+                            (<code>/api/queue/demand</code>, <code>/api/memory/feedback</code>, <code>/openapi.json</code>).
+                            Ao salvar, o Cérebro reinicia sozinho na porta nova e esta página abre o endereço novo
+                            (será preciso entrar de novo com o usuário admin).
+                        </p>
+                        <form id="network-form" class="source-test-row">
+                            <label class="text-muted" for="network-port">Porta:</label>
+                            <input type="number" id="network-port" min="1024" max="65535" style="width: 120px;" required>
+                            <label class="text-muted" for="network-host">Aceitar conexões de:</label>
+                            <select id="network-host" class="network-select">
+                                <option value="127.0.0.1">Somente este computador (127.0.0.1) — recomendado</option>
+                                <option value="0.0.0.0">Este computador e outros da rede (0.0.0.0)</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary">Salvar e reiniciar</button>
+                        </form>
+                        <div class="text-muted" id="network-info" style="margin-top: 10px; line-height: 1.6;"></div>
+                    </div>
+                </div>
+
                 <!-- Atualização do Sistema -->
                 <div class="card" id="update-card">
                     <div class="card-header">

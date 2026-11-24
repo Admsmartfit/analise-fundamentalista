@@ -76,7 +76,7 @@ function switchTab(tabId) {
     if (tabId === 'keypool') loadKeys();
     if (tabId === 'smartqueue') { loadWebhooks(); loadSavedRobotUrl(); }
     if (tabId === 'memory') loadMemories();
-    if (tabId === 'settings') { loadSettings(); loadUpdateStatus(); }
+    if (tabId === 'settings') { loadSettings(); loadUpdateStatus(); loadNetworkConfig(); }
     if (tabId === 'logs') loadLogs();
 }
 
@@ -625,6 +625,15 @@ function initForms() {
         });
     }
 
+    // Porta e endereço do Cérebro
+    const networkForm = document.getElementById('network-form');
+    if (networkForm) {
+        networkForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveNetworkConfig();
+        });
+    }
+
     // Atualização: salvar canal
     const channelForm = document.getElementById('update-channel-form');
     if (channelForm) {
@@ -997,6 +1006,65 @@ function renderAssetRun(idx) {
             <h4>Fontes (${ok} de ${run.fontes.length} responderam)</h4>
             <div class="source-grid">${run.fontes.map(f => renderSourceCard(f, false)).join('')}</div>
         </div>`;
+}
+
+// ==========================================
+// Porta e Endereço do Cérebro
+// ==========================================
+async function loadNetworkConfig() {
+    try {
+        const res = await authFetch('/api/system/network');
+        if (!res || !res.ok) return;
+        const n = await res.json();
+        document.getElementById('network-port').value = n.porta_salva;
+        document.getElementById('network-host').value = n.host_salvo in n.hosts ? n.host_salvo : '127.0.0.1';
+        document.getElementById('network-badge').innerText = `${n.host_em_uso}:${n.porta_em_uso}`;
+        const pendente = (n.porta_salva !== n.porta_em_uso || n.host_salvo !== n.host_em_uso)
+            ? `<br>⚠ Salvo <code>${esc(n.host_salvo)}:${esc(n.porta_salva)}</code>, mas ainda rodando em <code>${esc(n.host_em_uso)}:${esc(n.porta_em_uso)}</code>: reinicie o Cérebro.` : '';
+        document.getElementById('network-info').innerHTML =
+            `Em uso agora: <code>${esc(n.url)}</code> · O sistema de análise técnica deve chamar ` +
+            `<code>http://127.0.0.1:${esc(n.porta_em_uso)}/api/queue/demand</code>${pendente}` +
+            (n.modo_instalado ? '' : `<br>Modo de desenvolvimento: a porta é salva em <code>${esc(n.arquivo)}</code> e vale ao reiniciar o servidor manualmente.`);
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+async function saveNetworkConfig() {
+    const port = parseInt(document.getElementById('network-port').value, 10);
+    const host = document.getElementById('network-host').value;
+    if (!confirm(`Mudar o Cérebro para ${host}:${port}?\n\nO sistema reinicia (cerca de 15 s) e abre em http://127.0.0.1:${port}.\n` +
+        `Lembre de configurar a mesma porta no sistema de análise técnica.`)) return;
+    const res = await authFetch('/api/system/network', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ port, host })
+    });
+    const data = res ? await res.json().catch(() => ({})) : {};
+    if (!res || !res.ok) {
+        alert(`Não foi possível salvar: ${data.detail || 'erro desconhecido'}`);
+        return;
+    }
+    if (!data.reiniciando) {
+        alert(data.message);
+        loadNetworkConfig();
+        return;
+    }
+    showUpdateOverlay(`Reiniciando o Cérebro em ${data.nova_url}...`);
+    const inicio = Date.now();
+    while (Date.now() - inicio < 90000) {
+        await new Promise(r => setTimeout(r, 2000));
+        try {
+            const h = await fetch(`${data.nova_url}/api/health`, { cache: 'no-store' });
+            if (h.ok) {
+                showUpdateOverlay(`Pronto! Abrindo ${data.nova_url} (entre de novo com o usuário admin)...`);
+                setTimeout(() => { window.location.href = `${data.nova_url}/login`; }, 1500);
+                return;
+            }
+        } catch (e) { /* ainda reiniciando */ }
+    }
+    showUpdateOverlay(`O Cérebro está demorando a responder. Tente abrir ${data.nova_url} em instantes, ` +
+        `ou use o atalho "TradingAgents B3" da Área de Trabalho.`);
 }
 
 // ==========================================

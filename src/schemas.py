@@ -170,3 +170,8 @@ class WatchdogStatusResponse(BaseModel):
     last_checked_at: datetime.datetime
     model_config = ConfigDict(from_attributes=True)
 
+
+
+class NetworkConfigUpdate(BaseModel):
+    port: int = Field(..., ge=1024, le=65535, description="Porta do Cérebro (Cockpit + API)")
+    host: str = Field("127.0.0.1", description="127.0.0.1 (só este computador) ou 0.0.0.0 (rede)")

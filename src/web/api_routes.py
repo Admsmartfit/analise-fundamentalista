@@ -14,7 +14,7 @@ from src.schemas import (
     QueueItemResponse, TradeFeedbackRequest, TradeMemoryResponse,
     AssetResponse, AssetCreateUpdate, ApiKeyCreate, ApiKeyResponse,
     SystemSettingUpdate, AuditLogResponse, WatchdogStatusResponse,
-    SourceToggleRequest, CustomRSSCreate, WebhookPingRequest
+    SourceToggleRequest, CustomRSSCreate, WebhookPingRequest, NetworkConfigUpdate
 )
 
 from fastapi import UploadFile, File
@@ -475,3 +475,40 @@ async def update_upload(file: UploadFile = File(...), db: Session = Depends(get_
     db.add(AuditLog(level="WARNING", category="UPDATE", message=res["message"], details_json=res))
     db.commit()
     return res
+
+
+# ==========================================
+# 10. PORTA E ENDEREÇO DO CÉREBRO
+# ==========================================
+@router.get("/system/network")
+def get_network_config(current_user: User = Depends(get_current_user)):
+    from src import system_config
+    return system_config.current()
+
+
+@router.post("/system/network")
+def set_network_config(payload: NetworkConfigUpdate, db: Session = Depends(get_db),
+                       current_user: User = Depends(get_current_user)):
+    """Grava HOST/PORT no .env e, na versão instalada, reinicia o servidor na porta nova."""
+    from src import system_config
+    if payload.host not in system_config.HOSTS_VALIDOS:
+        raise HTTPException(status_code=400, detail="Endereço inválido. Use 127.0.0.1 ou 0.0.0.0.")
+    atual = system_config.current()
+    if payload.port == atual["porta_em_uso"] and payload.host == atual["host_em_uso"]:
+        raise HTTPException(status_code=400, detail="Essa já é a porta e o endereço em uso.")
+    if payload.port != atual["porta_em_uso"] and not system_config.port_is_free(payload.port):
+        raise HTTPException(status_code=400, detail=f"A porta {payload.port} já está em uso por outro programa.")
+
+    system_config.set_env_values(system_config.env_path(), {"HOST": payload.host, "PORT": str(payload.port)})
+    nova_url = f"http://127.0.0.1:{payload.port}"
+    db.add(AuditLog(level="WARNING", category="SYSTEM",
+                    message=f"Porta/endereço do Cérebro alterados para {payload.host}:{payload.port}",
+                    details_json={"host": payload.host, "port": payload.port}))
+    db.commit()
+
+    if atual["modo_instalado"]:
+        system_config.schedule_restart()
+        return {"reiniciando": True, "nova_url": nova_url,
+                "message": f"Salvo. O Cérebro está reiniciando em {nova_url}."}
+    return {"reiniciando": False, "nova_url": nova_url,
+            "message": f"Salvo em {system_config.env_path()}. Reinicie o servidor manualmente para usar {nova_url}."}

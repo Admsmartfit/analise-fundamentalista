@@ -10,8 +10,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.getenv("TA_DATA_DIR") or BASE_DIR)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-# Carrega variáveis de ambiente do .env (primeiro o da pasta de dados)
-load_dotenv(dotenv_path=DATA_DIR / ".env")
+# Carrega variáveis de ambiente do .env (primeiro o da pasta de dados).
+# Na versão instalada o .env da pasta de dados MANDA (override): quando o sistema reinicia a si mesmo
+# (atualização, troca de porta), o processo novo herda as variáveis do antigo e, sem override,
+# continuaria com a porta/configuração antiga em vez da que acabou de ser salva.
+load_dotenv(dotenv_path=DATA_DIR / ".env", override=bool(os.getenv("TA_DATA_DIR")))
 if DATA_DIR != BASE_DIR:
     load_dotenv(dotenv_path=BASE_DIR / ".env")
 
@@ -37,8 +40,8 @@ ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
 # Servidor Web
-HOST = os.getenv("HOST", "0.0.0.0")
-PORT = int(os.getenv("PORT", "8000"))
+HOST = os.getenv("HOST", "127.0.0.1")
+PORT = int(os.getenv("PORT", "8001"))
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
 # Banco de Dados

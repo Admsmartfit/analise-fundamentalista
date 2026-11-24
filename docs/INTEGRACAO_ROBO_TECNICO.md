@@ -29,9 +29,9 @@ São **3 mensagens**, todas HTTP + JSON (UTF-8):
 
 | # | Direção | Quem chama | Endereço |
 |---|---|---|---|
-| ① | Robô → Cérebro | Robô | `POST http://<IP-do-Cérebro>:8000/api/queue/demand` |
-| ② | Cérebro → Robô | Cérebro (webhook) | `POST <URL configurada no Cérebro>` (padrão `http://localhost:5000/webhook/decisao`) |
-| ③ | Robô → Cérebro | Robô | `POST http://<IP-do-Cérebro>:8000/api/memory/feedback` |
+| ① | Robô → Cérebro | Robô | `POST http://<IP-do-Cérebro>:8001/api/queue/demand` |
+| ② | Cérebro → Robô | Cérebro (webhook) | `POST <URL configurada no Cérebro>` (padrão `http://127.0.0.1:5000/webhook/decisao`) |
+| ③ | Robô → Cérebro | Robô | `POST http://<IP-do-Cérebro>:8001/api/memory/feedback` |
 
 ---
 
@@ -41,18 +41,18 @@ São **3 mensagens**, todas HTTP + JSON (UTF-8):
 | O quê | Onde | Exemplo |
 |---|---|---|
 | URL que vai **receber** as decisões (webhook ②) | Cockpit → **Watchdog & Ajustes** → campo **"URL de Callback do Robô Técnico (Webhook)"**. (Alternativa: `TECHNICAL_ROBOT_WEBHOOK_URL` no `.env`; o valor da tela tem prioridade e vale na hora, sem reiniciar.) | `http://192.168.0.50:5000/webhook/decisao` |
-| Porta/host do Cérebro | `.env`: `HOST=0.0.0.0`, `PORT=8000` | — |
+| Porta/host do Cérebro | `.env`: `HOST=127.0.0.1`, `PORT=8001` (ou pela tela: **Watchdog & Ajustes → Porta do Cérebro**) | — |
 | Tentativas de reenvio | `.env`: `WEBHOOK_MAX_RETRIES` (padrão 5), `WEBHOOK_TIMEOUT_SECONDS` (padrão 10) | — |
 
 ### No Robô Técnico
 | O quê | Valor |
 |---|---|
-| URL base do Cérebro | `http://<IP-do-Cérebro>:8000` (no mesmo PC: `http://localhost:8000`) |
+| URL base do Cérebro | `http://<IP-do-Cérebro>:8001` (no mesmo PC: `http://127.0.0.1:8001`) |
 | Um endpoint HTTP **POST** que aceite JSON | O mesmo caminho configurado no Cérebro (ex.: `/webhook/decisao`) |
 | Timeout ao chamar ① | 10 s é suficiente (resposta imediata) |
 | Timeout ao chamar ③ | **90 s** (a IA escreve a reflexão antes de responder) |
 
-> Se o Cérebro e o Robô estão em máquinas diferentes, libere a porta do Robô (ex.: 5000) e a porta 8000
+> Se o Cérebro e o Robô estão em máquinas diferentes, libere a porta do Robô (ex.: 5000) e a porta 8001
 > do Cérebro no firewall do Windows, só para a rede local.
 
 ---
@@ -306,9 +306,9 @@ Se o Robô não puder receber webhooks, ele pode **consultar** as decisões. Ess
 ## 7. Segurança: leia antes de expor na rede
 
 - `POST /api/queue/demand` e `POST /api/memory/feedback` **não exigem autenticação**. Qualquer máquina que
-  alcance a porta 8000 consegue enfileirar análises (gastando cota de IA) ou gravar resultados falsos.
+  alcance a porta 8001 consegue enfileirar análises (gastando cota de IA) ou gravar resultados falsos.
 - O webhook ② **não tem assinatura**. O Robô não tem como provar que a mensagem veio do Cérebro.
-- **Recomendação:** mantenha os dois programas na **mesma máquina ou rede local**, com a porta 8000 e a do
+- **Recomendação:** mantenha os dois programas na **mesma máquina ou rede local**, com a porta 8001 e a do
   Robô **fechadas para a internet** no firewall. Troque a senha padrão `admin123` (`ADMIN_PASSWORD` no `.env`).
 - Se precisar expor fora da rede local, peça a inclusão de uma chave compartilhada: header `X-API-Key` nas
   entradas e assinatura HMAC no webhook. Hoje isso não existe.
@@ -317,7 +317,7 @@ Se o Robô não puder receber webhooks, ele pode **consultar** as decisões. Ess
 
 ## 8. Roteiro de teste (copiar e colar)
 
-Comandos para PowerShell (`curl.exe`), com o Cérebro em `localhost:8000`.
+Comandos para PowerShell (`curl.exe`), com o Cérebro em `127.0.0.1:8001`.
 
 **a) Robô de teste para receber o webhook**: salve como `robo_teste.py` e rode
 `pip install fastapi uvicorn` e depois `python robo_teste.py`:
@@ -341,18 +341,18 @@ async def decisao(req: Request):
 uvicorn.run(app, host="0.0.0.0", port=5000)
 ```
 No Cockpit, em **Watchdog & Ajustes → URL de Callback do Robô Técnico (Webhook)**, coloque
-`http://localhost:5000/webhook/decisao` e salve.
+`http://127.0.0.1:5000/webhook/decisao` e salve.
 
 **b) Pedir análise:**
 ```powershell
-curl.exe -X POST http://localhost:8000/api/queue/demand -H "Content-Type: application/json" -d '{\"ativos\":[\"PETR4\"],\"prioridade\":\"alta\"}'
+curl.exe -X POST http://127.0.0.1:8001/api/queue/demand -H "Content-Type: application/json" -d '{\"ativos\":[\"PETR4\"],\"prioridade\":\"alta\"}'
 ```
 Em alguns segundos o `robo_teste.py` imprime a decisão. Também dá para ver em **Smart Queue & Webhooks**
 (status `delivered`).
 
 **c) Informar resultado:**
 ```powershell
-curl.exe -X POST http://localhost:8000/api/memory/feedback -H "Content-Type: application/json" -d '{\"ativo\":\"PETR4\",\"resultado\":\"WIN\",\"motivo_grafico\":\"Alvo atingido\",\"lucro_prejuizo_pct\":3.2}'
+curl.exe -X POST http://127.0.0.1:8001/api/memory/feedback -H "Content-Type: application/json" -d '{\"ativo\":\"PETR4\",\"resultado\":\"WIN\",\"motivo_grafico\":\"Alvo atingido\",\"lucro_prejuizo_pct\":3.2}'
 ```
 A lição aparece em **Memória Pós-Morte**.
 

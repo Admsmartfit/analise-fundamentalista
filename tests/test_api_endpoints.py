@@ -7,15 +7,18 @@ from sqlalchemy.orm import sessionmaker
 from src.database import Base
 from src.models import User
 from src.auth.security import get_password_hash
-from src.schemas import LoginRequest, QueueDemandRequest, TradeFeedbackRequest, ApiKeyCreate
+from src.schemas import LoginRequest, QueueDemandRequest, TradeFeedbackRequest, ApiKeyCreate, WebhookPingRequest
 from src.web.api_routes import (
     json_login,
     receive_queue_demand,
     receive_trade_feedback,
     list_assets,
     add_key,
-    get_watchdogs_status
+    get_watchdogs_status,
+    ping_technical_robot_endpoint
 )
+
+
 
 @pytest.fixture
 def db_session():
@@ -88,3 +91,18 @@ def test_api_keys_and_assets_endpoints(db_session):
     wd_status = get_watchdogs_status(db_session, admin_user)
     assert "upstream" in wd_status
     assert "custom" in wd_status
+
+def test_api_webhook_ping_endpoint(db_session):
+    admin_user = db_session.query(User).first()
+    from unittest.mock import patch
+    import httpx
+
+    mock_resp = httpx.Response(status_code=200, text='{"status": "ok"}')
+    with patch.object(httpx.Client, "post", return_value=mock_resp):
+        req = WebhookPingRequest(target_url="http://localhost:5000/webhook/decisao")
+        res = ping_technical_robot_endpoint(req, db_session, admin_user)
+        assert res["ok"] is True
+        assert res["status_code"] == 200
+        assert res["target_url"] == "http://localhost:5000/webhook/decisao"
+
+

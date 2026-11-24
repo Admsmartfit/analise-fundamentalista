@@ -14,8 +14,9 @@ from src.schemas import (
     QueueItemResponse, TradeFeedbackRequest, TradeMemoryResponse,
     AssetResponse, AssetCreateUpdate, ApiKeyCreate, ApiKeyResponse,
     SystemSettingUpdate, AuditLogResponse, WatchdogStatusResponse,
-    SourceToggleRequest, CustomRSSCreate
+    SourceToggleRequest, CustomRSSCreate, WebhookPingRequest
 )
+
 from fastapi import UploadFile, File
 from src.config import APP_VERSION
 from src.updater import manager as update_manager
@@ -358,6 +359,15 @@ def force_retry_all(db: Session = Depends(get_db), current_user: User = Depends(
     dispatcher = get_webhook_dispatcher()
     total = dispatcher.force_retry_all(db)
     return {"message": "Processamento de retentativas executado", "reenviados": total}
+
+@router.post("/webhooks/test-ping")
+def ping_technical_robot_endpoint(payload: Optional[WebhookPingRequest] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Testa a conectividade com o robô técnico em tempo real."""
+    dispatcher = get_webhook_dispatcher()
+    url = payload.target_url if payload and payload.target_url else None
+    return dispatcher.ping_target(db, target_url=url)
+
+
 
 
 # ==========================================

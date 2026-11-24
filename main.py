@@ -38,9 +38,23 @@ def main():
     parser.add_argument("--host", type=str, default=HOST, help=f"Host do servidor (padrão: {HOST})")
     parser.add_argument("--enqueue", type=str, help="Enfileira tickers para análise imediata (ex: PETR4,VALE3)")
     parser.add_argument("--watchdog", action="store_true", help="Executa checagem imediata dos Watchdogs")
+    parser.add_argument("--mock-robot", action="store_true", help="Inicia o Robô Técnico Mock na porta 5000 para testes")
+    parser.add_argument("--test-comms", action="store_true", help="Executa diagnóstico de comunicação com o Robô Técnico")
     
     args = parser.parse_args()
+
+    if args.mock_robot:
+        import mock_technical_robot
+        mock_technical_robot.main()
+        return
+
+    if args.test_comms:
+        import test_communication
+        test_communication.run_tests()
+        return
+
     init_db()
+
 
     if args.enqueue:
         tickers = [t.strip().upper() for t in args.enqueue.split(",") if t.strip()]

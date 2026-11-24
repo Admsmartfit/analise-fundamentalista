@@ -144,7 +144,11 @@ class ApiKeyResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 # --- Schemas de Configurações e Logs ---
+class WebhookPingRequest(BaseModel):
+    target_url: Optional[str] = Field(None, description="URL do webhook para teste (opcional, usa a cadastrada se omitido)")
+
 class SystemSettingUpdate(BaseModel):
+
     key: str
     value: str
 

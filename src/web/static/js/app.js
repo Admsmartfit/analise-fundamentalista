@@ -290,6 +290,65 @@ async function forceRetryWebhooks() {
     }
 }
 
+async function pingTechnicalRobot() {
+    const btn = document.getElementById('btn-ping-robot');
+    const statusBadge = document.getElementById('webhook-ping-status');
+    const resultBox = document.getElementById('webhook-ping-result');
+    const inputUrl = document.getElementById('webhook-test-url').value.trim();
+
+    btn.disabled = true;
+    btn.innerText = 'Testando...';
+    statusBadge.className = 'badge badge-warning';
+    statusBadge.innerText = 'Testando conexão...';
+    resultBox.classList.remove('hidden');
+    resultBox.style.background = 'rgba(255, 255, 255, 0.03)';
+    resultBox.innerText = 'Enviando pacote de teste...';
+
+    try {
+        const payload = inputUrl ? { target_url: inputUrl } : {};
+        const res = await authFetch('/api/webhooks/test-ping', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res) return;
+        const data = await res.json();
+
+        if (data.ok) {
+            statusBadge.className = 'badge badge-success';
+            statusBadge.innerText = `Online (${data.latency_ms} ms)`;
+            resultBox.style.background = 'rgba(16, 185, 129, 0.1)';
+            resultBox.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+            resultBox.innerHTML = `
+                <div style="color: var(--success); font-weight: bold; margin-bottom: 4px;">✔ Conexão estabelecida com sucesso!</div>
+                <div><strong>Destino:</strong> <code>${data.target_url}</code></div>
+                <div><strong>Status HTTP:</strong> ${data.status_code} | <strong>Latência:</strong> ${data.latency_ms} ms</div>
+                <div style="margin-top: 6px;"><strong>Resposta do Robô:</strong> <code>${data.resposta || '(Vazio / 204)'}</code></div>
+            `;
+        } else {
+            statusBadge.className = 'badge badge-danger';
+            statusBadge.innerText = 'Falha na conexão';
+            resultBox.style.background = 'rgba(239, 68, 68, 0.1)';
+            resultBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+            resultBox.innerHTML = `
+                <div style="color: var(--danger); font-weight: bold; margin-bottom: 4px;">✖ Não foi possível conectar ao Robô Técnico</div>
+                <div><strong>Destino tentado:</strong> <code>${data.target_url}</code></div>
+                <div><strong>Erro detalhado:</strong> ${data.erro || 'Erro desconhecido'}</div>
+                <div style="margin-top: 6px; color: var(--text-muted);">Dica: Certifique-se de que o outro programa está rodando e ouvindo na porta indicada (ex: <code>python mock_technical_robot.py</code>).</div>
+            `;
+        }
+    } catch (err) {
+        statusBadge.className = 'badge badge-danger';
+        statusBadge.innerText = 'Erro';
+        resultBox.innerHTML = `<span style="color: var(--danger);">Erro inesperado na chamada: ${err}</span>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'Testar Conexão (Ping)';
+    }
+}
+
+
 // 5. Memória Pós-Morte (Settle-and-Reflect)
 async function loadMemories() {
     try {

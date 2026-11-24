@@ -130,7 +130,64 @@ class WebhookDispatcher:
             self.attempt_delivery(db, e.id)
         return len(entries)
 
+    def ping_target(self, db: Session, target_url: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Envia uma requisição de teste para o endpoint do robô técnico e afere status e latência.
+        Não armazena na outbox (é um teste imediato síncrono para validação da conectividade).
+        """
+        import time
+        url = target_url or self.resolve_target_url(db)
+        payload = {
+            "tipo": "ping_teste",
+            "origem": "TradingAgents B3",
+            "mensagem": "Teste de conectividade bidirecional entre TradingAgents e Robô Técnico",
+            "timestamp": datetime.datetime.utcnow().isoformat()
+        }
+        start_time = time.time()
+        try:
+            with httpx.Client(timeout=5.0) as client:
+                resp = client.post(url, json=payload)
+                latency_ms = round((time.time() - start_time) * 1000, 1)
+                ok = resp.status_code in (200, 201, 202, 204)
+                return {
+                    "ok": ok,
+                    "target_url": url,
+                    "status_code": resp.status_code,
+                    "latency_ms": latency_ms,
+                    "resposta": resp.text[:300],
+                    "erro": None if ok else f"HTTP {resp.status_code}"
+                }
+        except httpx.ConnectError:
+            latency_ms = round((time.time() - start_time) * 1000, 1)
+            return {
+                "ok": False,
+                "target_url": url,
+                "status_code": None,
+                "latency_ms": latency_ms,
+                "resposta": None,
+                "erro": f"Conexão recusada em {url}. Verifique se o robô técnico está ativo nesta porta."
+            }
+        except httpx.TimeoutException:
+            return {
+                "ok": False,
+                "target_url": url,
+                "status_code": None,
+                "latency_ms": 5000,
+                "resposta": None,
+                "erro": f"Timeout (5s) aguardando resposta de {url}."
+            }
+        except Exception as e:
+            return {
+                "ok": False,
+                "target_url": url,
+                "status_code": None,
+                "latency_ms": round((time.time() - start_time) * 1000, 1),
+                "resposta": None,
+                "erro": str(e)
+            }
+
     def _check_infrastructure_health(self, db: Session):
+
         """Detecta queda consecutiva severa da comunicação com o robô técnico"""
         recent_failed = db.query(WebhookOutbox).filter(
             WebhookOutbox.status == "failed"

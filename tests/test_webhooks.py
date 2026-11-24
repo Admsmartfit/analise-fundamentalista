@@ -49,6 +49,26 @@ def test_webhook_outbox_queue_and_retry(db_session):
         assert entry.retry_count == 1
         assert "Connection refused" in entry.last_error
 
+def test_webhook_ping_target_success_and_failure(db_session):
+    dispatcher = WebhookDispatcher()
+
+    # 1. Simula resposta bem sucedida
+    mock_resp = httpx.Response(status_code=200, text='{"status": "ok"}')
+    with patch.object(httpx.Client, "post", return_value=mock_resp):
+        res = dispatcher.ping_target(db_session, "http://localhost:5000/webhook/decisao")
+        assert res["ok"] is True
+        assert res["status_code"] == 200
+        assert "latency_ms" in res
+        assert "status" in res["resposta"]
+
+    # 2. Simula conexão recusada (servidor desligado)
+    with patch.object(httpx.Client, "post", side_effect=httpx.ConnectError("Conexão recusada")):
+        res_fail = dispatcher.ping_target(db_session, "http://localhost:5000/webhook/decisao")
+        assert res_fail["ok"] is False
+        assert res_fail["status_code"] is None
+        assert "Conexão recusada" in res_fail["erro"]
+
+
 
 
 def test_webhook_usa_url_configurada_no_cockpit(db_session):

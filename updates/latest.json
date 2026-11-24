@@ -1,8 +1,8 @@
 {
-  "version": "8.1.0",
-  "package": "TradingAgentsB3-app-8.1.0.zip",
-  "sha256": "a36463f36480d68718fc259e4d85d64feaa7600bcd5cf2ef7d3c8bc415e1bb7e",
-  "size": 235467,
-  "notes": "Primeira versão instalável",
-  "published_at": "2026-11-23T13:43:29"
+  "version": "8.2.0",
+  "package": "TradingAgentsB3-app-8.2.0.zip",
+  "sha256": "3d9119e3ecee1d3416405739ec02a34521cfb8e0c779f521eac67021edc063df",
+  "size": 244111,
+  "notes": "Suporte a teste de comunicacao bidirecional, endpoint de ping, Mock do Robo Tecnico e scripts de diagnostico.",
+  "published_at": "2026-11-24T08:13:21"
 }

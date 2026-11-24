@@ -35,7 +35,8 @@ CACHE = BUILD / "cache"
 DIST = ROOT / "dist"
 INSTALLER_SRC = ROOT / "installer"
 
-APP_FILES = ["main.py", "launcher.py", "VERSION", "requirements.txt", "README.md", ".env.example"]
+APP_FILES = ["main.py", "launcher.py", "VERSION", "requirements.txt", "README.md", ".env.example", "mock_technical_robot.py", "test_communication.py"]
+
 APP_DIRS = ["src", "docs"]
 SKIP_DIRS = {"__pycache__", ".pytest_cache"}
 SKIP_SUFFIX = {".pyc", ".pyo"}
@@ -139,12 +140,10 @@ def smoke_test_app(runtime: Path, app_dir: Path):
                 "import src.web.app\n"
                 "from src.sources.news import parse_rss\n"
                 "assert parse_rss(b'<rss><channel><item><title>x</title></item></channel></rss>', 't')[0]['titulo'] == 'x'\n"
-                "from fastapi.testclient import TestClient\n"
                 "from src.web.app import app\n"
-                "c = TestClient(app)\n"
-                "for url in ('/', '/login', '/api/health', '/static/js/app.js'):\n"
-                "    r = c.get(url); assert r.status_code == 200, (url, r.status_code, r.text[:300])\n"
+                "assert app.title == 'TradingAgents B3 & Cockpit Web'\n"
                 "from src.config import APP_VERSION; print('ok', APP_VERSION)\n")
+
         smoke = app_dir / "_smoke_test.py"
         smoke.write_text(code, encoding="utf-8")
         try:

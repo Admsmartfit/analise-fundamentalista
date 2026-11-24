@@ -102,3 +102,29 @@ def test_backup_database(tmp_path, monkeypatch):
     monkeypatch.setattr(manager, "BACKUPS_DIR", tmp_path / "bk")
     out = manager.backup_database("teste")
     assert sqlite3.connect(out).execute("select a from x").fetchone() == (1,)
+
+
+def test_canal_github_fixa_no_commit_mais_recente(monkeypatch):
+    sha = "a" * 40
+
+    class _R:
+        status_code = 200
+        text = sha
+    chamadas = []
+    monkeypatch.setattr(manager.httpx, "get", lambda url, **kw: (chamadas.append(url), _R())[1])
+    raw = "https://raw.githubusercontent.com/Dono/repo/main/updates/latest.json"
+    assert manager._pin_github_raw_to_latest_commit(raw) == \
+        f"https://raw.githubusercontent.com/Dono/repo/{sha}/updates/latest.json"
+    assert chamadas == ["https://api.github.com/repos/Dono/repo/commits/main"]
+    # URL que não é do GitHub, ou já fixada num commit: não mexe
+    assert manager._pin_github_raw_to_latest_commit("https://exemplo.com/latest.json") == "https://exemplo.com/latest.json"
+    fixada = f"https://raw.githubusercontent.com/Dono/repo/{sha}/latest.json"
+    assert manager._pin_github_raw_to_latest_commit(fixada) == fixada
+
+
+def test_canal_github_sem_api_usa_url_original(monkeypatch):
+    def falha(*a, **k):
+        raise RuntimeError("sem internet")
+    monkeypatch.setattr(manager.httpx, "get", falha)
+    raw = "https://raw.githubusercontent.com/Dono/repo/main/updates/latest.json"
+    assert manager._pin_github_raw_to_latest_commit(raw) == raw

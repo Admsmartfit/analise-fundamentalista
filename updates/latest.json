@@ -1,8 +1,8 @@
 {
-  "version": "8.2.1",
-  "package": "TradingAgentsB3-app-8.2.1.zip",
-  "sha256": "94bb65c5fd24a166a17ed7e29df8e59adddc13c781dedf5c807d55bee71ffeab",
-  "size": 245644,
-  "notes": "Teste de conexão corrigido (campo com endereço salvo, botão salvar, aceita sem http://, reenvios seguem o endereço novo); padrão do robô: http://127.0.0.1:5000/webhook/decisao.",
-  "published_at": "2026-11-24T10:20:40"
+  "version": "8.2.2",
+  "package": "TradingAgentsB3-app-8.2.2.zip",
+  "sha256": "f4bb290524c7633a38775d4c99a2bbc8675afcfc6bfabb2f771153ddcb5a53b3",
+  "size": 247279,
+  "notes": "Atualização pelo GitHub lê sempre o commit mais recente (antes o cache do GitHub escondia a versão nova por até 5 min). Mostra a data de publicação. Teste de conexão com o robô: endereço padrão http://127.0.0.1:5000/webhook/decisao.",
+  "published_at": "2026-11-24T10:29:10"
 }

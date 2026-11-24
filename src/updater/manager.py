@@ -12,6 +12,7 @@ que contenha `latest.json`, gerado pelo script `build/build.py`:
 import datetime
 import hashlib
 import json
+import re
 import shutil
 import sqlite3
 import subprocess
@@ -56,12 +57,41 @@ def _is_url(channel: str) -> bool:
     return channel.lower().startswith(("http://", "https://"))
 
 
+_RAW_RE = re.compile(r"^https://raw\.githubusercontent\.com/([^/]+)/([^/]+)/([^/]+)/(.+)$", re.IGNORECASE)
+
+
+def _pin_github_raw_to_latest_commit(url: str) -> str:
+    """
+    raw.githubusercontent.com guarda arquivos em cache por 5 min (e ignora ?parâmetros), então logo depois
+    de um `git push` o latest.json antigo ainda aparece e o sistema diz "já está atualizado".
+    Troca o branch pelo SHA do commit mais recente (URL nova a cada push => nunca vem do cache).
+    O pacote é resolvido relativo a esta URL, então manifesto e pacote vêm do MESMO commit.
+    Se a API do GitHub falhar (sem internet, limite de 60 consultas/h), usa a URL original.
+    """
+    m = _RAW_RE.match(url)
+    if not m:
+        return url
+    owner, repo, ref, path = m.groups()
+    if re.fullmatch(r"[0-9a-f]{40}", ref):
+        return url  # já fixado num commit
+    try:
+        r = httpx.get(f"https://api.github.com/repos/{owner}/{repo}/commits/{ref}",
+                      headers={"Accept": "application/vnd.github.sha"}, timeout=10)
+        sha = r.text.strip() if r.status_code == 200 else ""
+        if re.fullmatch(r"[0-9a-f]{40}", sha):
+            return f"https://raw.githubusercontent.com/{owner}/{repo}/{sha}/{path}"
+    except Exception:
+        pass
+    return url
+
+
 def read_manifest(channel: str) -> Tuple[Dict[str, Any], str]:
     """Retorna (manifesto, local_base) onde local_base serve para resolver o pacote."""
     if not channel:
         raise UpdateError("Canal de atualização não configurado. Informe a pasta ou URL do latest.json.")
     if _is_url(channel):
         url = channel if channel.lower().endswith(".json") else channel.rstrip("/") + "/latest.json"
+        url = _pin_github_raw_to_latest_commit(url)
         try:
             r = httpx.get(url, timeout=20, follow_redirects=True)
             r.raise_for_status()

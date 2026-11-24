@@ -142,6 +142,10 @@ def smoke_test_app(runtime: Path, app_dir: Path):
                 "assert parse_rss(b'<rss><channel><item><title>x</title></item></channel></rss>', 't')[0]['titulo'] == 'x'\n"
                 "from src.web.app import app\n"
                 "assert app.title == 'TradingAgents B3 & Cockpit Web'\n"
+                "from fastapi.testclient import TestClient\n"
+                "c = TestClient(app)\n"
+                "for url in ('/', '/login', '/api/health', '/static/js/app.js', '/openapi.json'):\n"
+                "    r = c.get(url); assert r.status_code == 200, (url, r.status_code, r.text[:300])\n"
                 "from src.config import APP_VERSION; print('ok', APP_VERSION)\n")
 
         smoke = app_dir / "_smoke_test.py"

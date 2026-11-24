@@ -1042,7 +1042,8 @@ async function checkUpdate() {
             applyBtn.disabled = true;
             return;
         }
-        document.getElementById('update-available').innerText = data.versao_disponivel;
+        document.getElementById('update-available').innerText = data.versao_disponivel +
+            (data.publicado_em ? `  (publicada em ${new Date(data.publicado_em).toLocaleString('pt-BR')})` : '');
         document.getElementById('update-notes').innerText = data.notas || '';
         if (data.tem_atualizacao) {
             setUpdateBanner(`Nova versão <strong>${esc(data.versao_disponivel)}</strong> disponível.` +

@@ -1,8 +1,8 @@
 {
   "version": "8.2.1",
   "package": "TradingAgentsB3-app-8.2.1.zip",
-  "sha256": "17bce80a81772eea92df7d0bd37bcbaaaa615064caefe8c38f3fece3cb68bab4",
-  "size": 245667,
-  "notes": "Teste de conexão: campo já vem com o endereço salvo, botão para salvar o endereço testado, aceita endereço sem http://, reenvios pendentes seguem o endereço novo e dica de 127.0.0.1.",
-  "published_at": "2026-11-24T09:53:58"
+  "sha256": "94bb65c5fd24a166a17ed7e29df8e59adddc13c781dedf5c807d55bee71ffeab",
+  "size": 245644,
+  "notes": "Teste de conexão corrigido (campo com endereço salvo, botão salvar, aceita sem http://, reenvios seguem o endereço novo); padrão do robô: http://127.0.0.1:5000/webhook/decisao.",
+  "published_at": "2026-11-24T10:20:40"
 }

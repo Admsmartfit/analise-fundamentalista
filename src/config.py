@@ -52,7 +52,7 @@ GEMINI_FALLBACK_MODELS = [m.strip() for m in os.getenv(
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-5-5")
 
 # Robô Técnico e Webhooks
-TECHNICAL_ROBOT_WEBHOOK_URL = os.getenv("TECHNICAL_ROBOT_WEBHOOK_URL", "http://localhost:5000/webhook/decisao")
+TECHNICAL_ROBOT_WEBHOOK_URL = os.getenv("TECHNICAL_ROBOT_WEBHOOK_URL", "http://127.0.0.1:5000/webhook/decisao")
 WEBHOOK_MAX_RETRIES = int(os.getenv("WEBHOOK_MAX_RETRIES", "5"))
 WEBHOOK_TIMEOUT_SECONDS = int(os.getenv("WEBHOOK_TIMEOUT_SECONDS", "10"))
 WEBHOOK_RETRY_INTERVALS = [60, 120, 300, 900, 1800] # Segundos entre retentativas

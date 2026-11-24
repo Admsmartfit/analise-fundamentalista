@@ -357,7 +357,7 @@
                     <div class="card-body">
                         <p class="text-muted" style="margin-bottom: 12px;">Envia um webhook de teste para o endereço abaixo (já vem preenchido com o endereço salvo). Para testar outro, edite o campo; se funcionar, salve-o como endereço do robô.</p>
                         <form id="webhook-test-form" class="source-test-row" onsubmit="event.preventDefault(); pingTechnicalRobot();" style="display: flex; gap: 10px; align-items: center;">
-                            <input type="text" id="webhook-test-url" placeholder="http://localhost:8765/webhook/decisao" style="flex: 1;">
+                            <input type="text" id="webhook-test-url" placeholder="http://127.0.0.1:5000/webhook/decisao" style="flex: 1;">
                             <button type="submit" class="btn btn-primary" id="btn-ping-robot">Testar Conexão (Ping)</button>
                         </form>
                         <div id="webhook-ping-result" class="source-test-result hidden" style="margin-top: 14px; padding: 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 12px;"></div>
@@ -534,7 +534,7 @@
                         <form id="settings-form">
                             <div class="form-group">
                                 <label>URL de Callback do Robô Técnico (Webhook):</label>
-                                <input type="text" id="set-robot-url" placeholder="http://localhost:5000/webhook/decisao">
+                                <input type="text" id="set-robot-url" placeholder="http://127.0.0.1:5000/webhook/decisao">
                             </div>
                             <div class="grid-2-col">
                                 <div class="form-group">
